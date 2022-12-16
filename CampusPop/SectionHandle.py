@@ -147,25 +147,3 @@ class Section:
 		return out;
 		
 
-T = typing.TypeVar("T");
-def filterIterable(lst : typing.Iterable[T], filter : typing.Callable[[T], bool]) -> typing.Iterable[T]:
-	return (elem for elem in lst if filter(elem));
-
-def genFilterAtDayAndTime(day : Day, time : datetime.time) -> typing.Callable[[Section], bool]:
-
-	def genedFilter(sec : Section) -> bool:
-		for lecture in sec.lectureDays:
-			if lecture.timeFrame is None:
-				continue;
-			if day in lecture.days and time in lecture.timeFrame:
-				return True;
-		return False;
-
-	return genedFilter;
-
-
-def accumulatePopulation(pop : int, sec : Section) -> int:
-	return pop + sec.filled;
-
-def countPopOfSections(sections : typing.Iterable[Section]) -> int:
-	return functools.reduce(accumulatePopulation, sections, 0);
