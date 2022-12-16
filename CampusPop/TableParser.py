@@ -13,7 +13,7 @@ def isNewSection(row : list[str], sec : SectionHandle.Section) -> bool:
 
 
 def firstRowSection(row : list[str]) -> SectionHandle.Section:
-	sect = SectionHandle.Section(
+	return SectionHandle.Section(
 							row[1],
 							SectionHandle.Course(row[2], row[3]),
 							row[4],
@@ -21,19 +21,16 @@ def firstRowSection(row : list[str]) -> SectionHandle.Section:
 							row[6],
 							SectionHandle.InstructionalMethod.fromString(row[7]),
 							CellHandle.isPermitLocked(row[8]),
+							CellHandle.convertTermDates(row[9]),
+							CellHandle.convertDays(row[10]),
+							CellHandle.convertTimeFrame(row[11]),
 							int(row[12]),
-							int(row[13]));
-	sect.lectureDays.append(SectionHandle.LectureDay(
-											CellHandle.convertTermDates(row[9]),
-											CellHandle.convertDays(row[10]),
-											CellHandle.convertTimeFrame(row[11]),
-											row[16],
-											row[17],
-											CellHandle.convertLocation(row[18]),
-											row[19]));
-	
-	return sect;
-
+							int(row[13]),
+							row[16],
+							row[17],
+							CellHandle.convertLocation(row[18]),
+							row[19]);
+											
 def yieldSections(rows : typing.Iterator[list[str]]) -> typing.Iterator[SectionHandle.Section]:
 	
 	currSect = None;
@@ -43,26 +40,23 @@ def yieldSections(rows : typing.Iterator[list[str]]) -> typing.Iterator[SectionH
 		if len(row) != 20:
 			continue;
 		
-		if currSect is None:
+		if currSect is None or isNewSection(row, currSect):
 			currSect = firstRowSection(row);
+			yield currSect;
+			continue;
 
 		if not isNewSection(row, currSect):
-			currSect.lectureDays.append(SectionHandle.LectureDay(
+			currSect = currSect.copyForNewDay(
 						CellHandle.convertTermDates(row[9]),
 						CellHandle.convertDays(row[10]),
 						CellHandle.convertTimeFrame(row[11]),
 						row[16],
 						row[17],
 						CellHandle.convertLocation(row[18]),
-						row[19]));
+						row[19]);
+			yield currSect;
 			continue;
-
-		yield currSect;
-		currSect = firstRowSection(row);
 		
-		
-	if (currSect is not None):
-		yield currSect;
 
 def sectionsFromTableDump(filePath : str) -> typing.Iterator[SectionHandle.Section]:
 

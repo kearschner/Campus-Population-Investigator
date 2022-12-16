@@ -93,57 +93,30 @@ class InstructionalMethod(enum.Enum):
 
 		return InstructionalMethod.NOT_APPLICABLE;
 
+
 @dataclass
-class LectureDay:
+class Section:
+	crn : str;
+	course : Course;
+	sectionNumber : str;
+	credits : str;
+	name : str;
+	method : InstructionalMethod;
+	permit : bool;
 	termDates : typing.Optional[Range];
 	days : Day;
 	timeFrame : typing.Optional[Range];
+	capacity : int;
+	availability : int;
 	instructors : str;
 	campus : str;
 	location : typing.Optional[Location];
 	attributes : str;
 
-class Section:
-
-	def __init__(self, 
-				crn : str,
-				course : Course,
-				sec : str,
-				credits : str,
-				name : str,
-				method : InstructionalMethod,
-				permit : bool,
-				capacity : int,
-				availability : int) -> None:
-
-		self.crn : str = crn;
-		self.course : Course = course;
-		self.sectionNumber : str = sec;
-		self.credits : str = credits;
-		self.name : str = name;
-		self.method : InstructionalMethod = method;
-		self.permit : bool = permit;
-		self.capacity : int = capacity;
-		self.availability : int = availability;
-
-		self.lectureDays : list[LectureDay] = [];
-
 	filled = property(lambda self: self.capacity - self.availability, None, None, "Number of seats currently filled in the section.");
 
-	def getLectureByDay(self, day : Day) -> typing.Optional[LectureDay]:
-		for lect in self.lectureDays:
-			if day in lect.days:
-				return lect;
-		return None;
+	def copyForNewDay(self, termDates : typing.Optional[Range], days : Day, timeFrame : typing.Optional[Range], instructors : str, campus: str, location :  typing.Optional[Location], attributes : str) -> "Section":
+		return Section(self.crn, self.course, self.sectionNumber, self.credits, self.name, self.method, self.permit, termDates, days, timeFrame, self.capacity, self.availability, instructors, campus, location, attributes);
 		
-	def __str__(self) -> str:
-		if not self.lectureDays:
-			return "Section not fully initialized";
-
-		out = "CRN: %s, Course: %s, Sect: %s, Creds: %s, Name: %s, Method: %s, Permit: %s, Cap: %s, Avail: %s\n" % (self.crn, self.course, self.sectionNumber, self.credits, self.name, self.method, self.permit, self.capacity, self.availability);
-		for lect in self.lectureDays:
-			out += "\tTerm: %s, Days: %s, Time: %s, Instructor: %s, Campus: %s, Loc: %s, Attrib: %s\n" % (lect.termDates, lect.days, lect.timeFrame, lect.instructors, lect.campus, lect.location, lect.attributes);
-
-		return out;
 		
 

@@ -1,14 +1,13 @@
 import CampusPop.SectionHandle as SectionHandle
 import CampusPop.TableParser as TableParser
+import CampusPop.Analysis as Analysis
 import datetime
 
 allSections : list[SectionHandle.Section] = list(TableParser.sectionsFromTableDump("oasisDump.txt"));
 
-for sec in allSections:
-	print("%s" % sec);
 
 #print([sec.name for sec in allSections if sec.getLectureByDay(SectionHandle.Day.SUN) is not None]);
 
-filtered = SectionHandle.filterIterable(allSections, SectionHandle.genFilterAtDayAndTime(SectionHandle.Day.SUN, datetime.time(8,15)))
+filtered = Analysis.filterIterable(allSections, Analysis.genFilterAtDayAndTime(SectionHandle.Day.MON, datetime.time(10,15)))
 
-print(SectionHandle.countPopOfSections(filtered))
+print(Analysis.reduceDict(Analysis.accumulatePopulation, filtered, 0, Analysis.getBuilding));
