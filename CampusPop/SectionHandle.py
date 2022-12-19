@@ -1,7 +1,5 @@
-import datetime
 import enum
 from dataclasses import dataclass
-import functools
 import typing
 
 
@@ -12,6 +10,7 @@ class Course:
 
 	def __str__(self) -> str:
 		return "%s %s" % (self.subject, self.courseNumber);
+
 
 class Location:
 
@@ -30,6 +29,7 @@ class SelfComparable(typing.Protocol):
 	def __ge__(self : C, other : C, /) -> bool:
 		...
 
+
 class Range():
 
 	def __init__(self, start : SelfComparable, end : SelfComparable):
@@ -41,6 +41,7 @@ class Range():
 
 	def __contains__(self, value : SelfComparable) -> bool:
 		return value >= self.start and value <= self.end;
+
 
 class Day(enum.Flag):
     MON = enum.auto();
@@ -69,6 +70,7 @@ class Day(enum.Flag):
             return Day.SUN;
 
         return Day(0);
+
 
 class InstructionalMethod(enum.Enum):
 	ALL_ONLINE = enum.auto();
@@ -117,6 +119,3 @@ class Section:
 
 	def copyForNewDay(self, termDates : typing.Optional[Range], days : Day, timeFrame : typing.Optional[Range], instructors : str, campus: str, location :  typing.Optional[Location], attributes : str) -> "Section":
 		return Section(self.crn, self.course, self.sectionNumber, self.credits, self.name, self.method, self.permit, termDates, days, timeFrame, self.capacity, self.availability, instructors, campus, location, attributes);
-		
-		
-
