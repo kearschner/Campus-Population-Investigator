@@ -3,19 +3,36 @@ import CampusPop.TableParser as TableParser
 import CampusPop.Analysis as Analysis
 import datetime
 import matplotlib.pyplot as plt
+import operator
 
 allSections : list[SectionHandle.Section] = list(TableParser.sectionsFromTableDump("oasisDump.txt"));
 
+'''
+allBuildings = Analysis.setOfKeys(allSections, lambda sec: sec.getBuilding());
+print(allBuildings);
+'''
 
-#print([sec.name for sec in allSections if sec.getLectureByDay(SectionHandle.Day.SUN) is not None]);
+buildingInfo = Analysis.mapRoomsToSections("che", Analysis.filterIterable(allSections, Analysis.genDayFilter(SectionHandle.Day.MON)));
 
-#plt.plot(list(Analysis.popAcrossDay(allSections, SectionHandle.Day.MON, 15)))
-#plt.plot(list(Analysis.popAcrossDay(allSections, SectionHandle.Day.TUE, 15)))
-#plt.plot(list(Analysis.popAcrossDay(allSections, SectionHandle.Day.WED, 15)))
-#plt.plot(list(Analysis.popAcrossDay(allSections, SectionHandle.Day.THU, 15)))
-#plt.plot(list(Analysis.popAcrossDay(allSections, SectionHandle.Day.FRI, 15)))
+#print([len(secs) for secs in cheInfo.values()])
 
-#plt.show()
+#cheInfo = Analysis.operateOnDict(lambda secGroup : [sec.location for sec in secGroup], cheInfo);
 
-#filtered = Analysis.filterIterable(allSections, Analysis.genFilterAtDayAndTime(SectionHandle.Day.MON, datetime.time(12,15)))
-#print(Analysis.reduceDict(Analysis.accumulatePopulation, filtered, 0, Analysis.getBuilding));
+#print([str(sec) for sec in cheInfo["103"]]);
+
+roomEstCapacity = Analysis.operateOnDict(Analysis.getHighestCapacity, buildingInfo);
+
+for room, cap in roomEstCapacity.items():
+	print(room, "->", cap);
+
+roomUsages = Analysis.operateOnDict(Analysis.getTimespans, buildingInfo);
+
+roomUsages = Analysis.operateOnDict(Analysis.composeFunctions(Analysis.timespanMultiUnion, Analysis.getTimespans), buildingInfo);
+
+for room, usage in roomUsages.items():
+	print(room, "->", end='');
+	print([span.strWithFormatter(SectionHandle.justTimeStr) for span in usage]);
+
+
+#filtered = Analysis.filterIterable(allSections, Analysis.intersection( [Analysis.genBuildingFilter("CMC"), Analysis.genInstructionMethodFilter(SectionHandle.InstructionalMethod.CLASSROOM)]));
+#print([cmcSec for cmcSec in filtered])

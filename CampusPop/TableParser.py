@@ -27,40 +27,45 @@ def hourMap(num : int, afternoon : bool) -> int:
     return num + 12;
 
 
-def convertTime(timeString : str) -> typing.Optional[datetime.time]:
+def convertTime(timeString : typing.Optional[str]) -> datetime.datetime:
 
-    if "N/A" in timeString:
-        return None;
+	if timeString is None:
+		return datetime.datetime.min;
 
-    if "TBA" in timeString:
-        return None;
+	if "N/A" in timeString:
+		return datetime.datetime.min;
 
-    afternoon : bool = 'pm' in timeString;
+	if "TBA" in timeString:
+		return datetime.datetime.min;
+
+	afternoon : bool = 'pm' in timeString;
     
-    hour = hourMap(int(timeString[:2]), afternoon);
+	hour = hourMap(int(timeString[:2]), afternoon);
     
-    return datetime.time(hour, int(timeString[3:5]));
+	return SectionHandle.datetimeOnArbDate(hour, int(timeString[3:5]));
 
 
-def convertDate(timeString : str) -> datetime.date:
-    return datetime.date(2001, int(timeString[:2]), int(timeString[-2:]));
+def convertDate(timeString : typing.Optional[str]) -> datetime.date:
+	
+	if timeString is None:
+		return datetime.date.min;
+
+	return datetime.date(9999, int(timeString[:2]), int(timeString[-2:]));
 
 
 T = typing.TypeVar('T')
-def convertRange(operation : typing.Callable[[str], typing.Optional[SectionHandle.SelfComparable]], sep : str) -> typing.Callable[[str], typing.Optional[SectionHandle.Range]]:
+def convertRange(operation : typing.Callable[[typing.Optional[str]], SectionHandle.SelfComparable], sep : str) -> typing.Callable[[str], SectionHandle.Range]:
 
-    def conversionFunc(input : str) -> typing.Optional[SectionHandle.Range]:
-        if sep not in input:
-            return None;
-        endPoints : list[str] = input.split(sep);
-        start = operation(endPoints[0]);
-        end = operation(endPoints[1]);
+	def conversionFunc(input : str) -> SectionHandle.Range:
+		if sep not in input:
+			return SectionHandle.Range(operation(None), operation(None));
+		endPoints = input.split(sep);
+		start = operation(endPoints[0]);
+		end = operation(endPoints[1]);
 
-        if start is None or end is None:
-            return None;
-        return SectionHandle.Range(start, end);
+		return SectionHandle.Range(start, end);
 
-    return conversionFunc;
+	return conversionFunc;
 
 
 convertTimeFrame = functools.cache(convertRange(convertTime, '-'));
@@ -73,7 +78,7 @@ def convertLocation(locString : str) -> typing.Optional[SectionHandle.Location]:
     if "TBA" in locString:
         return None;
 
-    return SectionHandle.Location(locString);
+    return SectionHandle.Location.fromFullString(locString);
 
 
 def convertSeats(capString : str, availString : str) -> int:
@@ -123,19 +128,25 @@ def yieldSections(rows : typing.Iterator[list[str]]) -> typing.Iterator[SectionH
 			continue;
 		
 		if currSect is None or isNewSection(row, currSect):
-			currSect = firstRowSection(row);
+			try:
+				currSect = firstRowSection(row);
+			except ValueError:
+				continue;
 			yield currSect;
 			continue;
 
 		if not isNewSection(row, currSect):
-			currSect = currSect.copyForNewDay(
-						convertTermDates(row[9]),
-						convertDays(row[10]),
-						convertTimeFrame(row[11]),
-						row[16],
-						row[17],
-						convertLocation(row[18]),
-						row[19]);
+			try:
+				currSect = currSect.copyForNewDay(
+							convertTermDates(row[9]),
+							convertDays(row[10]),
+							convertTimeFrame(row[11]),
+							row[16],
+							row[17],
+							convertLocation(row[18]),
+							row[19]);
+			except ValueError:
+				continue;
 			yield currSect;
 			continue;
 		
