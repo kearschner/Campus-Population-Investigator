@@ -3,8 +3,6 @@ from dataclasses import dataclass
 import typing
 import datetime
 
-def justTimeStr(dt : datetime.datetime) -> str:
-	return "%02d:%02d" % (dt.hour, dt.minute);
 
 def datetimeOnArbDate(hour : int, minute : int) -> datetime.datetime:
 	return datetime.datetime(9999, 1, 1, hour, minute);
@@ -17,6 +15,10 @@ class Course:
 
 	def __str__(self) -> str:
 		return "%s %s" % (self.subject, self.courseNumber);
+
+	@staticmethod
+	def fromFullString(courseStr : str) -> "Course":
+		return Course(*courseStr.split(' '));
 
 
 @dataclass(frozen=True, eq=True)
@@ -44,23 +46,21 @@ class SelfComparable(typing.Protocol):
 	def __gt__(self : C, other : C, /) -> bool:
 		...
 
-
+@dataclass(frozen=True)
 class Range(typing.Generic[C]):
 
-	def __init__(self, start : C, end : C):
-		if end < start:
+	start : C;
+	end : C;
+
+	def __post_init__(self):
+		if self.end < self.start:
 			raise ValueError("start must be less than or equal to end.");
-		self.start : C = start;
-		self.end : C = end;
 	
 	def __str__(self) -> str:
 		return "%s-%s" % (self.start, self.end);
 
 	def strWithFormatter(self, formatter : typing.Callable[[C], str]):
 		return "%s-%s" % (formatter(self.start), formatter(self.end))
-
-	def __repr__(self) -> str:
-		return "Range(start=%s, end=%s)" % (repr(self.start), repr(self.end));
 
 	def __contains__(self, value : C) -> bool:
 		return self.start <= value and value <= self.end;
@@ -120,6 +120,9 @@ class Range(typing.Generic[C]):
 
 		return None;
 
+class RegistrationPriority(enum.StrEnum):
+	NEEDED = enum.auto();
+	FILLER = enum.auto();
 
 
 class Day(enum.Flag):
@@ -184,7 +187,7 @@ class Section:
 	name : str;
 	method : InstructionalMethod;
 	permit : bool;
-	termDates : typing.Optional[Range[datetime.datetime]];
+	termDates : Range[datetime.datetime];
 	days : Day;
 	timeFrame : Range;
 	capacity : int;
@@ -196,10 +199,19 @@ class Section:
 
 	filled = property(lambda self: self.capacity - self.availability, None, None, "Number of seats currently filled in the section.");
 
-	def __str__(self) -> str:
-		return "CRN: %s, Sec: %s, Cred: %s\nCourse: %s - %s\nMethod: %s, Permit: %s\nTerm:%s, Day: %s, Time: %s, Loc: %s\nCap: %d, Avail: %d\nInstructors: %s, Campus:%s, Attributes:%s" % (self.crn, self.sectionNumber, self.credits, self.name, self.course, self.method, self.permit, self.termDates, self.days, self.timeFrame.strWithFormatter(justTimeStr), self.location, self.capacity, self.availability, self.instructors, self.campus, self.attributes);
+	@property
+	def scheduleInformation(self) -> str:
+		return '''CRN: %s\n
+				Course: %s\n
+				Section: %s\n
+				Days: %s\n
+				Time: %s\n
+				Loc: %s''' % (self.crn, self.course, self.sectionNumber, self.days, self.timeFrame, self.location);
 
-	def copyForNewDay(self, termDates : typing.Optional[Range], days : Day, timeFrame : Range, instructors : str, campus: str, location :  typing.Optional[Location], attributes : str) -> typing.Self:
+	def __str__(self) -> str:
+		return "CRN: %s, Sec: %s, Cred: %s\nCourse: %s - %s\nMethod: %s, Permit: %s\nTerm:%s, Day: %s, Time: %s, Loc: %s\nCap: %d, Avail: %d\nInstructors: %s, Campus:%s, Attributes:%s" % (self.crn, self.sectionNumber, self.credits, self.name, self.course, self.method, self.permit, self.termDates, self.days, self.timeFrame, self.location, self.capacity, self.availability, self.instructors, self.campus, self.attributes);
+
+	def copyForNewDay(self, termDates : Range[datetime.datetime], days : Day, timeFrame : Range[datetime.datetime], instructors : str, campus: str, location :  typing.Optional[Location], attributes : str) -> typing.Self:
 		return Section(self.crn, self.course, self.sectionNumber, self.credits, self.name, self.method, self.permit, termDates, days, timeFrame, self.capacity, self.availability, instructors, campus, location, attributes);
 
 	def getBuilding(self) -> str:

@@ -7,13 +7,12 @@ import itertools
 
 T = TypeVar("T");
 U = TypeVar("U");
+S = TypeVar("S");
 
-def composeFunctions(*func : Callable) -> Callable:
+def compose(f : Callable[[T], S], g : Callable[[U], T]) -> Callable[[U], S]:
 
-	def compose(f : Callable, g : Callable) -> Callable:
-		return lambda x : f(g(x));
+	return lambda x : f(g(x));
 
-	return functools.reduce(compose, func, lambda x : x);
 
 
 def recursiveReduce(composer : Callable[[T, T], T], baseCase : T) -> Callable[[U, Iterable[Callable[[U], T]]], T]:
@@ -90,7 +89,7 @@ def genInstructionMethodFilter(method : SectionHandle.InstructionalMethod) -> Ca
 def genCoursesFilter(courses : Container[SectionHandle.Course]) -> Callable[[SectionHandle.Section], bool]:
 
 	def generated(sec : SectionHandle.Section) -> bool:
-		return sec in courses;
+		return sec.getCourse() in courses;
 
 	return generated;
 
@@ -178,7 +177,7 @@ def sortedByTimespan(sections : Iterable[SectionHandle.Section]) -> list[Section
 	return sorted(sections, key=lambda sec : sec.timeFrame)
 
 
-def getTimespans(sections : Iterable[SectionHandle.Section]) -> Iterable[SectionHandle.Range[datetime.datetime]]:
+def getTimespans(sections : Iterable[SectionHandle.Section]) -> Iterable[SectionHandle.Range]:
 	for sec in sections:
 		yield sec.timeFrame;
 
@@ -256,24 +255,78 @@ def hasScheduleOverlap(targetCRNGroup : Iterable[SectionHandle.Section], schedul
 	return False;
 
 
+def sectionsIntoCourseGroups(sections : Iterable[SectionHandle.Section]) -> Iterable[tuple[SectionHandle.Course, tuple[tuple[SectionHandle.Section]]]]:
+	for sharedCourse, courseGroup in itertools.groupby(sections, SectionHandle.Section.getCourse):
+		yield sharedCourse, tuple((tuple(crnGroupPair[1]) for crnGroupPair in itertools.groupby(courseGroup, SectionHandle.Section.getCRN)));
 
+
+def optimizeSchedule(required : list[tuple[SectionHandle.Course, tuple[tuple[SectionHandle.Section]]]],
+					 optional : list[tuple[SectionHandle.Course, tuple[tuple[SectionHandle.Section]]]]) -> Iterable[set[tuple[SectionHandle.Section]]]:
+
+	requiredSize = len(required);
+	optionalSize = len(optional);
+
+	def buildOptionalSchedule(schedule : set[tuple[SectionHandle.Section]], groupIndex : int) -> Iterable[set[tuple[SectionHandle.Section]]]:
+
+		hasSuccessPath = False;
+
+		for targetCRNGroup in optional[groupIndex][1]:
+			
+			if hasScheduleOverlap(targetCRNGroup, schedule):
+				continue;
+
+			newSchedule = schedule | set([targetCRNGroup]);
+
+			if groupIndex + 1 != optionalSize:
+				yield from buildOptionalSchedule(newSchedule, groupIndex + 1);
+				hasSuccessPath = True;
+				continue;
+
+			yield newSchedule;
+
+		if not hasSuccessPath:
+			yield schedule;
+
+
+	def buildRequiredSchedule(schedule : set[tuple[SectionHandle.Section]], groupIndex : int) -> Iterable[set[tuple[SectionHandle.Section]]]:
+
+		for targetCRNGroup in required[groupIndex][1]:
+			
+			if hasScheduleOverlap(targetCRNGroup, schedule):
+				continue;
+
+			newSchedule = schedule | set([targetCRNGroup]);
+
+			if groupIndex + 1 != requiredSize:
+				yield from buildRequiredSchedule(newSchedule, groupIndex + 1);
+				continue;
+
+			if optionalSize != 0:
+				yield from buildOptionalSchedule(newSchedule, 0);
+				continue;
+
+			yield newSchedule;
+
+
+
+	yield from buildRequiredSchedule(set(), 0);
 
 
 def getPossibleSchedules( sections : Iterable[SectionHandle.Section], 
 						  requestedClasses : Container[SectionHandle.Course],
-						  priorityFunction : Callable[[SectionHandle.Course], int]) -> Iterable[Iterable[Iterable[SectionHandle.Section]]]:
+						  priorityFunction : Callable[[SectionHandle.Course], SectionHandle.RegistrationPriority]) -> Iterable[Iterable[Iterable[SectionHandle.Section]]]:
 	
 	sections = filterIterable(sections, genCoursesFilter(requestedClasses));
 
-	courseGroups : list[list[list[SectionHandle.Section]]] = [];
-	availableCourses : list[SectionHandle.Course] = [];
+	courseGroupsByPriority = bucketBy(sectionsIntoCourseGroups(sections), compose(priorityFunction, lambda courseGroupPair : courseGroupPair[0])) 
 
-	for sharedCourse, courseGroup in itertools.groupby(sections, SectionHandle.Section.getCourse):
-		groupList = [];
-		for sharedCRN, crnGroup in itertools.groupby(courseGroup, SectionHandle.Section.getCRN):
-			groupList.append(list(crnGroup));
-		courseGroups.append(groupList);
-		availableCourses.append(sharedCourse);
+	print(courseGroupsByPriority);
 
+	requiredClasses = courseGroupsByPriority[SectionHandle.RegistrationPriority.NEEDED];
+	optionalClasses = courseGroupsByPriority[SectionHandle.RegistrationPriority.FILLER];
 	
-	return [];
+	return optimizeSchedule(requiredClasses, optionalClasses);
+
+
+def initMultipleCourses(courseStrings : Iterable[str]) -> Iterable[SectionHandle.Course]:
+	return map(SectionHandle.Course.fromFullString, courseStrings);
