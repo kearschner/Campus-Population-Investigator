@@ -18,7 +18,7 @@ def priorityFunc(course : SectionHandle.Course) -> SectionHandle.RegistrationPri
 possibilities = Analysis.getPossibleSchedules(allSections, choices, priorityFunc);
 
 for i, possib in enumerate(possibilities):
-	print("Possibility {i}:\n");
+	print("Possibility %d:\n" % i);
 	for secGroup in possib:
 		for sec in secGroup:
 			print(sec.scheduleInformation);

@@ -9,6 +9,14 @@ T = TypeVar("T");
 U = TypeVar("U");
 S = TypeVar("S");
 
+
+def dictAsCallable(sourceDict : dict[T, S]) -> Callable[[T], S]:
+
+    def generated(key : T) -> S:
+        return sourceDict[key];
+
+    return generated;
+
 def compose(f : Callable[[T], S], g : Callable[[U], T]) -> Callable[[U], S]:
 
 	return lambda x : f(g(x));

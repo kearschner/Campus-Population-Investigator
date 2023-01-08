@@ -201,12 +201,13 @@ class Section:
 
 	@property
 	def scheduleInformation(self) -> str:
-		return '''CRN: %s\n
-				Course: %s\n
+		return '''Course: %s\n
+				CRN: %s\n
 				Section: %s\n
 				Days: %s\n
 				Time: %s\n
-				Loc: %s''' % (self.crn, self.course, self.sectionNumber, self.days, self.timeFrame, self.location);
+				Loc: %s \n
+                Seats Filled: %d / %d''' % (self.course, self.crn, self.sectionNumber, self.days, self.timeFrame, self.location, self.filled, self.capacity);
 
 	def __str__(self) -> str:
 		return "CRN: %s, Sec: %s, Cred: %s\nCourse: %s - %s\nMethod: %s, Permit: %s\nTerm:%s, Day: %s, Time: %s, Loc: %s\nCap: %d, Avail: %d\nInstructors: %s, Campus:%s, Attributes:%s" % (self.crn, self.sectionNumber, self.credits, self.name, self.course, self.method, self.permit, self.termDates, self.days, self.timeFrame, self.location, self.capacity, self.availability, self.instructors, self.campus, self.attributes);
