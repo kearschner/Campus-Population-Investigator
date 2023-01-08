@@ -69,7 +69,7 @@ class Range(typing.Generic[C]):
 		return self.start == other.start and self.end == other.end;
 
 	def __lt__(self, other : "Range[C]") -> bool:
-		return self.start < other.start;
+		return self.end < other.end;
 
 	def wraps(self, other : "Range[C]") -> bool:
 		return self.start <= other.start and other.end <= self.end;
