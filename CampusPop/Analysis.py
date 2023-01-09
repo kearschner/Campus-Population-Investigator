@@ -12,27 +12,27 @@ S = TypeVar("S");
 
 def dictAsCallable(sourceDict : dict[T, S]) -> Callable[[T], S]:
 
-    def generated(key : T) -> S:
+    def generatedCallableDict(key : T) -> S:
         return sourceDict[key];
 
-    return generated;
+    return generatedCallableDict;
+
 
 def compose(f : Callable[[T], S], g : Callable[[U], T]) -> Callable[[U], S]:
 
 	return lambda x : f(g(x));
 
 
-
 def recursiveReduce(composer : Callable[[T, T], T], baseCase : T) -> Callable[[U, Iterable[Callable[[U], T]]], T]:
 	
-	def generated(sharedInput : U, funcs : Iterable[Callable[[U], T]]) -> T:
+	def generatedCallableDict(sharedInput : U, funcs : Iterable[Callable[[U], T]]) -> T:
 
 		def underlyingComposition(value : T, func : Callable[[U], T]) -> T:
 			return composer(value, func(sharedInput));
 
 		return functools.reduce(underlyingComposition, funcs, baseCase);
 
-	return generated;
+	return generatedCallableDict;
 
 		
 def intersection(funcs : Iterable[Callable[[T], bool]]) -> Callable[[T], bool]:
@@ -40,10 +40,10 @@ def intersection(funcs : Iterable[Callable[[T], bool]]) -> Callable[[T], bool]:
 	def underlyingIntersect(x : bool, y : bool) -> bool:
 		return x and y;
 		
-	def generated(sharedInput : T) -> bool:
+	def generatedCallableDict(sharedInput : T) -> bool:
 		return (recursiveReduce(underlyingIntersect, True))(sharedInput, funcs);
 
-	return generated;
+	return generatedCallableDict;
 
 
 def union(funcs : Iterable[Callable[[T], bool]]) -> Callable[[T], bool]:
@@ -51,10 +51,10 @@ def union(funcs : Iterable[Callable[[T], bool]]) -> Callable[[T], bool]:
 	def underlyingUnion(x : bool, y : bool) -> bool:
 		return x and y;
 		
-	def generated(sharedInput : T) -> bool:
+	def generatedCallableDict(sharedInput : T) -> bool:
 		return (recursiveReduce(underlyingUnion, False))(sharedInput, funcs);
 
-	return generated;
+	return generatedCallableDict;
 
 
 T = TypeVar("T");
@@ -64,42 +64,42 @@ def filterIterable(lst : Iterable[T], filter : Callable[[T], bool]) -> Iterator[
 
 def genDayFilter(day : SectionHandle.Day) -> Callable[[SectionHandle.Section], bool]:
 
-	def generated(sec : SectionHandle.Section) -> bool:
+	def generatedCallableDict(sec : SectionHandle.Section) -> bool:
 		return day in sec.days;
 
-	return generated;
+	return generatedCallableDict;
 
 
 def genTimeFilter(time : datetime.datetime) -> Callable[[SectionHandle.Section], bool]:
 	
-	def generated(sec : SectionHandle.Section) -> bool:
+	def generatedCallableDict(sec : SectionHandle.Section) -> bool:
 		return sec.timeFrame is not None and time in sec.timeFrame;
 
-	return generated;
+	return generatedCallableDict;
 
 
 def genBuildingFilter(building : str) -> Callable[[SectionHandle.Section], bool]:
 
-	def generated(sec : SectionHandle.Section) -> bool:
+	def generatedCallableDict(sec : SectionHandle.Section) -> bool:
 		return SectionHandle.Section.getBuilding(sec).upper() == building.upper();
 
-	return generated;
+	return generatedCallableDict;
 
 
 def genInstructionMethodFilter(method : SectionHandle.InstructionalMethod) -> Callable[[SectionHandle.Section], bool]:
 
-	def generated(sec : SectionHandle.Section) -> bool:
+	def generatedCallableDict(sec : SectionHandle.Section) -> bool:
 		return sec.method in method;
 
-	return generated;
+	return generatedCallableDict;
 
 
 def genCoursesFilter(courses : Container[SectionHandle.Course]) -> Callable[[SectionHandle.Section], bool]:
 
-	def generated(sec : SectionHandle.Section) -> bool:
+	def generatedCallableDict(sec : SectionHandle.Section) -> bool:
 		return sec.getCourse() in courses;
 
-	return generated;
+	return generatedCallableDict;
 
 
 def accumulatePopulation(pop : int, sec : SectionHandle.Section) -> int:
@@ -327,8 +327,6 @@ def getPossibleSchedules( sections : Iterable[SectionHandle.Section],
 	sections = filterIterable(sections, genCoursesFilter(requestedClasses));
 
 	courseGroupsByPriority = bucketBy(sectionsIntoCourseGroups(sections), compose(priorityFunction, lambda courseGroupPair : courseGroupPair[0])) 
-
-	print(courseGroupsByPriority);
 
 	requiredClasses = courseGroupsByPriority[SectionHandle.RegistrationPriority.NEEDED];
 	optionalClasses = courseGroupsByPriority[SectionHandle.RegistrationPriority.FILLER];

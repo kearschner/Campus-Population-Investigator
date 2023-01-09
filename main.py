@@ -3,6 +3,7 @@ import CampusPop.TableParser as TableParser
 import CampusPop.Analysis as Analysis
 import datetime
 import matplotlib.pyplot as plt
+import plotly.express as px
 import operator
 
 allSections : list[SectionHandle.Section] = list(TableParser.sectionsFromTableDump("oasisDump.txt"));
@@ -25,6 +26,7 @@ for i, possib in enumerate(possibilities):
 		print("\n");
 	print("\n\n");
 
+px.timeline()
 
 '''
 allBuildings = Analysis.setOfKeys(allSections, lambda sec: sec.getBuilding());

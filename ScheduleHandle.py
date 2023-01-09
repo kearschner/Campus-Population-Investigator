@@ -11,19 +11,19 @@ def parseRequest(requestLine : str) -> tuple[SectionHandle.Course, SectionHandle
     
     course = SectionHandle.Course(subject, courseNumber);
 
-    if priorityFlag == '1':
+    if priorityFlag.strip() == '1':
         return course, SectionHandle.RegistrationPriority.NEEDED;
     
     return course, SectionHandle.RegistrationPriority.FILLER;
 
 
-def parseRequests(secRequests : Iterable[str]) -> tuple[Iterable[SectionHandle.Course], Callable[[SectionHandle.Course], SectionHandle.RegistrationPriority]]:
+def parseRequests(secRequests : Iterable[str]) -> tuple[list[SectionHandle.Course], Callable[[SectionHandle.Course], SectionHandle.RegistrationPriority]]:
 
     courseRegPriorityPairs = [parseRequest(reqLine) for reqLine in secRequests];
 
     priorityFunc = Analysis.dictAsCallable(dict(courseRegPriorityPairs));
 
-    return (coursePriorityPair[0] for coursePriorityPair in courseRegPriorityPairs), priorityFunc;
+    return [coursePriorityPair[0] for coursePriorityPair in courseRegPriorityPairs], priorityFunc;
 
 secRequestsFile = open("classes.txt", "r");
 
@@ -31,7 +31,7 @@ choices, priorityFunc = parseRequests(secRequestsFile.readlines());
 
 allSections : list[SectionHandle.Section] = list(TableParser.sectionsFromTableDump("oasisDump.txt"));
 
-possibilities = Analysis.getPossibleSchedules(allSections, list(choices), priorityFunc);
+possibilities = Analysis.getPossibleSchedules(allSections, choices, priorityFunc);
 
 for i, possib in enumerate(possibilities):
 	print("Possibility %d:\n" % i);
